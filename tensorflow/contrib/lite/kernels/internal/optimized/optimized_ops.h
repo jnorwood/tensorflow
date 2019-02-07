@@ -25,13 +25,13 @@ limitations under the License.
 #include <tuple>
 #include <type_traits>
 
-#include "third_party/eigen3/Eigen/Core"
-#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "fixedpoint/fixedpoint.h"
 #include "public/gemmlowp.h"
 #include "tensorflow/contrib/lite/kernels/internal/common.h"
 #include "tensorflow/contrib/lite/kernels/internal/round.h"
 #include "tensorflow/contrib/lite/kernels/internal/types.h"
+#include "third_party/eigen3/Eigen/Core"
+#include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 
 namespace tflite {
 namespace optimized_ops {
@@ -1603,26 +1603,34 @@ inline void BroadcastAdd(int left_shift, const uint8* input1_data,
     for (int y = 0; y < ArraySize(output_dims, 2); ++y) {
       for (int x = 0; x < ArraySize(output_dims, 1); ++x) {
         for (int c = 0; c < ArraySize(output_dims, 0); ++c) {
+          //printf("id=%08d,", SubscriptToIndex(desc1, c, x, y, b));
           const int32 input1_val =
               input1_offset + input1_data[SubscriptToIndex(desc1, c, x, y, b)];
+          printf("inv1=%d,", input1_val);
           const int32 input2_val =
               input2_offset + input2_data[SubscriptToIndex(desc2, c, x, y, b)];
+          printf("inv2=%d,", input2_val);
           const int32 shifted_input1_val = input1_val * (1 << left_shift);
           const int32 shifted_input2_val = input2_val * (1 << left_shift);
           const int32 scaled_input1_val =
               MultiplyByQuantizedMultiplierSmallerThanOne(
                   shifted_input1_val, input1_multiplier, input1_shift);
+          printf("scaled_input1_val=%d,", scaled_input1_val);
           const int32 scaled_input2_val =
               MultiplyByQuantizedMultiplierSmallerThanOne(
                   shifted_input2_val, input2_multiplier, input2_shift);
+          printf("scaled_input2_val=%d,", scaled_input2_val);
           const int32 raw_sum = scaled_input1_val + scaled_input2_val;
+          printf("raw_sum=%d,", raw_sum);
           const int32 raw_output =
               MultiplyByQuantizedMultiplierSmallerThanOne(
                   raw_sum, output_multiplier, output_shift) +
               output_offset;
+          printf("raw_output=%d,", raw_output);
           const int32 clamped_output =
               std::min(output_activation_max,
                        std::max(output_activation_min, raw_output));
+          printf("clamped_output=%d\n", clamped_output);
           output_data[Offset(output_dims, c, x, y, b)] =
               static_cast<uint8>(clamped_output);
         }
@@ -2653,8 +2661,7 @@ inline void Softmax(const uint8* input_data, const Dims<4>& input_dims,
 
         int32 fixed_sum_of_exps = sum_of_exps.raw();
         // TODO(starka): Use a NEON intrinsic like vclzq_u32 instead.
-        int headroom_plus_one =
-            clz(static_cast<uint32>(fixed_sum_of_exps));
+        int headroom_plus_one = clz(static_cast<uint32>(fixed_sum_of_exps));
         // This is the number of bits to the left of the binary point above 1.0.
         // Consider fixed_sum_of_exps=1.25.  In that case shifted_scale=0.8 and
         // no later adjustment will be needed.

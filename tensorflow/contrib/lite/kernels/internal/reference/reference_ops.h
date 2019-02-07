@@ -23,12 +23,12 @@ limitations under the License.
 #include <memory>
 #include <type_traits>
 
-#include "third_party/eigen3/Eigen/Core"
 #include "fixedpoint/fixedpoint.h"
 #include "public/gemmlowp.h"
 #include "tensorflow/contrib/lite/kernels/internal/common.h"
 #include "tensorflow/contrib/lite/kernels/internal/round.h"
 #include "tensorflow/contrib/lite/kernels/internal/types.h"
+#include "third_party/eigen3/Eigen/Core"
 
 namespace tflite {
 namespace reference_ops {
@@ -270,12 +270,16 @@ inline void Conv(const uint8* input_data, const Dims<4>& input_dims,
   const int filter_width = ArraySize(filter_dims, 1);
   const int output_height = ArraySize(output_dims, 2);
   const int output_width = ArraySize(output_dims, 1);
-  for (int batch = 0; batch < batches; ++batch) {
+  printf("---------conv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+      input_height,input_width,output_height,output_width,filter_height,filter_width,
+      output_multiplier, output_shift);
+      for (int batch = 0; batch < batches; ++batch) {
     for (int out_y = 0; out_y < output_height; ++out_y) {
       for (int out_x = 0; out_x < output_width; ++out_x) {
         for (int out_channel = 0; out_channel < output_depth; ++out_channel) {
           const int in_x_origin = (out_x * stride_width) - pad_width;
           const int in_y_origin = (out_y * stride_height) - pad_height;
+          printf("out_y=%04d, out_x=%04d, out_ch=%04d,", out_y, out_x, out_channel);
           int32 acc = 0;
           for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
             for (int filter_x = 0; filter_x < filter_width; ++filter_x) {
@@ -297,14 +301,18 @@ inline void Conv(const uint8* input_data, const Dims<4>& input_dims,
               }
             }
           }
+          printf("acc=%04d,", acc);
           if (bias_data) {
             acc += bias_data[Offset(bias_dims, out_channel, 0, 0, 0)];
           }
+          printf("accb=%04d,", acc);
           acc = MultiplyByQuantizedMultiplierSmallerThanOne(
               acc, output_multiplier, output_shift);
+          printf("accd=%04d,", acc);
           acc += output_offset;
           acc = std::max(acc, output_activation_min);
           acc = std::min(acc, output_activation_max);
+          printf("accc=%04d\n", acc);
           output_data[Offset(output_dims, out_channel, out_x, out_y, batch)] =
               static_cast<uint8>(acc);
         }

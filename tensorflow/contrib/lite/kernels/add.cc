@@ -111,6 +111,18 @@ void EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
   int32 output_activation_min, output_activation_max;
   CalculateActivationRangeUint8(params->activation, output,
                                 &output_activation_min, &output_activation_max);
+  printf(
+      "---------add in1 z=%d, mpy=%d,shft=%d,  in2 z=%d, mpy=%d,shft=%d,  out z=%d, mpy=%d,shft=%d\n",
+      input1_offset, input1_multiplier, input1_shift, 
+      input2_offset, input2_multiplier, input2_shift, 
+      output_offset, output_multiplier, output_shift);
+  printf(
+      "---in1_scale=%f, in2_scale=%f, out_scale=%f\n" , 
+      input1->params.scale,
+         input2->params.scale, output->params.scale);
+  printf("---twice_max_input_scale=%f, real_input1_multiplier=%f, real_input2_multiplier=%f, real_output_multiplier=%f\n", 
+      twice_max_input_scale, real_input1_multiplier, real_input2_multiplier,
+      real_output_multiplier );
 
 #define TF_LITE_ADD(type)                                                   \
   type::BroadcastAdd(                                                       \

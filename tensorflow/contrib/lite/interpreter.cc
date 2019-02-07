@@ -549,7 +549,7 @@ void Interpreter::UseNNAPI(bool enable) {
   // We also need to make sure getLibraryHandle() is renamed to be NNAPI
   // prefixed.
 
-  if (!NNAPIExists()) enable = false;
+  if (enable && !NNAPIExists()) enable = false;
   if (!enable) {
     nnapi_delegate_.reset();
   } else if (!nnapi_delegate_) {

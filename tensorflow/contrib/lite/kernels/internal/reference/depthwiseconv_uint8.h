@@ -45,6 +45,9 @@ inline void DepthwiseConv(const uint8* input_data, const Dims<4>& input_dims,
   const int filter_width = ArraySize(filter_dims, 1);
   const int output_height = ArraySize(output_dims, 2);
   const int output_width = ArraySize(output_dims, 1);
+  printf("-------dwconv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+         input_height, input_width, output_height, output_width, filter_height,
+         filter_width, output_multiplier,output_shift);
   TFLITE_DCHECK(output_depth == input_depth * depth_multiplier);
 
   for (int b = 0; b < batches; ++b) {
@@ -55,6 +58,7 @@ inline void DepthwiseConv(const uint8* input_data, const Dims<4>& input_dims,
             const int oc = m + ic * depth_multiplier;
             const int in_x_origin = (out_x * stride_width) - pad_width;
             const int in_y_origin = (out_y * stride_height) - pad_height;
+            printf("out_y=%03d,out_x=%03d,ic=%03d,", out_y, out_x,ic);
             int32 acc = 0;
             for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
               for (int filter_x = 0; filter_x < filter_width; ++filter_x) {
@@ -73,14 +77,18 @@ inline void DepthwiseConv(const uint8* input_data, const Dims<4>& input_dims,
                 }
               }
             }
+            printf("acc=%d,", acc);
             if (bias_data) {
               acc += bias_data[Offset(bias_dims, oc, 0, 0, 0)];
             }
+            printf("accb=%d,", acc);
             acc = MultiplyByQuantizedMultiplierSmallerThanOne(
                 acc, output_multiplier, output_shift);
+            printf("accd=%d,", acc);
             acc += output_offset;
             acc = std::max(acc, output_activation_min);
             acc = std::min(acc, output_activation_max);
+            printf("accc=%d\n", acc);
             output_data[Offset(output_dims, oc, out_x, out_y, b)] =
                 static_cast<uint8>(acc);
           }

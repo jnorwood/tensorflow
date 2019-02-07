@@ -25,7 +25,8 @@ limitations under the License.
 #include <gtest/gtest.h>
 #include "tensorflow/contrib/lite/error_reporter.h"
 #include "tensorflow/contrib/lite/testing/util.h"
-
+#include "tensorflow/contrib/lite/context.h"
+#include "tensorflow/contrib/lite/kernels/register.h"
 // Comparison for TfLiteRegistration. Since TfLiteRegistration is a C object,
 // we must declare this in global namespace, so argument-dependent operator
 // lookup works.
@@ -281,8 +282,58 @@ TEST(BasicFlatBufferModel, TestBuildFromModel) {
 
 }  // namespace tflite
 
+FILE* openReadFileGetSize(const char* fname, unsigned long* sizep) {
+  FILE* fp;
+  if ((fp = fopen(fname, "rb")) == NULL) {
+    printf("### fatal error: cannot open '%s'\n", fname);
+    return 0;
+  }
+  if (sizep != NULL) {
+    fseek(fp, 0, SEEK_END);
+    *sizep = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+  }
+  return fp;
+}
+
+
+void readNPYFileData(const char* fname, void* buffer,
+                              unsigned long size) {
+  unsigned long len;
+  FILE* fp = openReadFileGetSize(fname, &len);
+
+  /// \todo we should check the numpy header
+
+  int sz224 = 224 * 224 * 3;
+  // Data is at the end of file, so seek past header
+  fseek(fp, len - sz224, SEEK_SET);
+  if (fread(buffer, 1, size, fp) != size) {
+    printf("### fatal error: read error file '%s'\n", fname);
+  }
+
+  fclose(fp);
+}
+
+
 int main(int argc, char** argv) {
-  ::tflite::LogToStderr();
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  //std::unique_ptr<tflite::FlatBufferModel> 
+      auto model =
+      tflite::FlatBufferModel::BuildFromFile(
+      //"c:/mobilenet/mobilenet_v1_1.0_224_quant.tflite"
+      "c:/mobilenetV2/mobilenet_v2_1.0_224_quant/mobilenet_v2_1.0_224_quant.tflite"
+      );
+  std::unique_ptr<tflite::Interpreter> interpreter;
+  tflite::ops::builtin::BuiltinOpResolver resolver;
+  tflite::InterpreterBuilder(*model, resolver)(&interpreter);
+  TfLiteStatus status = interpreter->AllocateTensors();
+  interpreter->SetNumThreads(1);
+  uint8_t* input = interpreter->typed_input_tensor<uint8_t>(0);
+  // load from numpy file an image ... cat here
+  unsigned long sz = 224 * 224 * 3;
+  readNPYFileData("c:/mobilenet/cat224ui8tf.npy", input, sz);
+  status = interpreter->Invoke();
+  uint8_t* output = interpreter->typed_output_tensor<uint8_t>(0);
+  //::tflite::LogToStderr();
+  //::testing::InitGoogleTest(&argc, argv);
+ // return RUN_ALL_TESTS();
 }
