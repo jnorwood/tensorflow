@@ -39,7 +39,7 @@ const char* kEmptyTensorName = "";
 #ifdef _WIN32
 static const bool use_nnapi = false;
 #else
-static const bool use_nnapi = true;
+static const bool use_nnapi = false; //true;
 #endif
 
 
