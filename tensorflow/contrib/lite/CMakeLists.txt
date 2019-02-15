@@ -1,4 +1,72 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
+include(FetchContent)
+include(ExternalProject)
+FetchContent_Declare(
+  mobilenetv1
+  URL http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz
+  URL_HASH MD5=36af340c00e60291931cb30ce32d4e86
+  SOURCE_DIR  mobilenetv1
+)
+
+FetchContent_Declare(
+  mobilenetv2
+  URL http://download.tensorflow.org/models/tflite_11_05_08/mobilenet_v2_1.0_224_quant.tgz
+  URL_HASH MD5=04b4cc2536e1a51b9d29e98921b4970b
+  SOURCE_DIR  mobilenetv2
+)
+FetchContent_Declare(
+  inceptionv1
+  URL http://download.tensorflow.org/models/inception_v1_224_quant_20181026.tgz
+  #URL_HASH MD5=04b4cc2536e1a51b9d29e98921b4970b
+  SOURCE_DIR  inceptionv1
+)
+FetchContent_Declare(
+  inceptionv2
+  URL http://download.tensorflow.org/models/inception_v2_224_quant_20181026.tgz
+  #URL_HASH MD5=04b4cc2536e1a51b9d29e98921b4970b
+  SOURCE_DIR  inceptionv2
+)
+FetchContent_Declare(
+  inceptionv3
+  URL http://download.tensorflow.org/models/tflite_11_05_08/inception_v3_quant.tgz
+  #URL_HASH MD5=04b4cc2536e1a51b9d29e98921b4970b
+  SOURCE_DIR  inceptionv3
+)
+FetchContent_Declare(
+  inceptionv4
+  URL http://download.tensorflow.org/models/inception_v4_299_quant_20181026.tgz
+  #URL_HASH MD5=04b4cc2536e1a51b9d29e98921b4970b
+  SOURCE_DIR  inceptionv4
+)
+
+
+FetchContent_GetProperties(mobilenetv1)
+if(NOT mobilenetv1_POPULATED)
+  FetchContent_Populate(mobilenetv1)
+endif()
+
+FetchContent_GetProperties(mobilenetv2)
+if(NOT mobilenetv2_POPULATED)
+  FetchContent_Populate(mobilenetv2)
+endif()
+
+FetchContent_GetProperties(inceptionv1)
+if(NOT inceptionv1_POPULATED)
+  FetchContent_Populate(inceptionv1)
+endif()
+FetchContent_GetProperties(inceptionv2)
+if(NOT inceptionv2_POPULATED)
+  FetchContent_Populate(inceptionv2)
+endif()
+FetchContent_GetProperties(inceptionv3)
+if(NOT inceptionv3_POPULATED)
+  FetchContent_Populate(inceptionv3)
+endif()
+FetchContent_GetProperties(inceptionv4)
+if(NOT inceptionv4_POPULATED)
+  FetchContent_Populate(inceptionv4)
+endif()
+
 
 # Project
 project(tensorflow-lite C CXX)
@@ -49,12 +117,13 @@ endmacro()
 
 
 
-
 # Set C++14 as standard for the whole project
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" )
 
-# set(GTEST_LIB_DIR "${SDK_DIR}/googletest/lib")
+set(SDK_DIR googletest)
+set(GTEST_LIB_DIR downloads/googletest/googlemock/gtest)
+set(GMOCK_LIB_DIR downloads/googletest/googlemock)
 
 set(TENSORFLOW_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 set(TENSORFLOW_LITE_ROOT_DIR "${TENSORFLOW_ROOT_DIR}/tensorflow/contrib/lite")
@@ -66,6 +135,10 @@ set(TENSORFLOW_LITE_FLATBUFFERS_DIR "${TENSORFLOW_LITE_ROOT_DIR}/downloads/flatb
 set(TENSORFLOW_LITE_FARMHASH_DIR "${TENSORFLOW_LITE_ROOT_DIR}/downloads/farmhash/src")
 set(TENSORFLOW_LITE_GMOCK_DIR "${TENSORFLOW_LITE_ROOT_DIR}/downloads/googletest/googlemock/include")
 set(TENSORFLOW_LITE_GTEST_DIR "${TENSORFLOW_LITE_ROOT_DIR}/downloads/googletest/googletest/include")
+
+add_subdirectory( ${TENSORFLOW_LITE_ROOT_DIR}/downloads/googletest/googlemock)
+#add_subdirectory( ${TENSORFLOW_LITE_ROOT_DIR}/downloads/googletest/googletest )
+
 
 if (WIN32)
     set(PLATFORM_ENV_TIME_SRC ${TENSORFLOW_ROOT_DIR}/tensorflow/core/platform/windows/env_time.cc)
@@ -81,7 +154,18 @@ if (WIN32)
       CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
 else()
-    set(PLATFORM_ENV_TIME_SRC ${TENSORFLOW_ROOT_DIR}/tensorflow/core/platform/unix/env_time.cc)
+    set(PLATFORM_ENV_TIME_SRC ${TENSORFLOW_ROOT_DIR}/tensorflow/core/platform/env_time.cc)
+    set(variables
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    )
+
 endif (WIN32)
 
 
@@ -164,17 +248,15 @@ add_library(tensorflow-lite_test_util STATIC
   )
 
 function(add_tflite_tests test_directory)
-  file(GLOB TEST_SRC_FILES RELATIVE ${test_directory} ${test_directory}/*_test.cc )
-  foreach (TEST_SRC_FILE ${TEST_SRC_FILES})
+	file(GLOB TEST_SRC_FILES RELATIVE ${test_directory} ${test_directory}/model_test.cc )
+	foreach (TEST_SRC_FILE ${TEST_SRC_FILES})
       string(REPLACE ".cc" "" TEST_NAME ${TEST_SRC_FILE})
-      add_executable(${TEST_NAME} ${test_directory}/${TEST_SRC_FILE} )
-      target_link_libraries(${TEST_NAME} debug tensorflow-lite ${GTEST_LIB_DIR}/gtestd.lib ${GMOCK_LIB_DIR}/gmockd.lib tensorflow-lite_test_util)
-      target_link_libraries(${TEST_NAME} optimized tensorflow-lite ${GTEST_LIB_DIR}/gtest.lib ${GMOCK_LIB_DIR}/gmock.lib tensorflow-lite_test_util)
-  endforeach()
+     add_executable(${TEST_NAME} ${test_directory}/${TEST_SRC_FILE} )
+ 	target_link_libraries(${TEST_NAME} tensorflow-lite gtest gmock tensorflow-lite_test_util dl)
+     endforeach()
 
 endfunction()
 
 
 add_tflite_tests(${TENSORFLOW_LITE_ROOT_DIR})
-add_tflite_tests(${TENSORFLOW_LITE_KERNEL_DIR})
-add_tflite_tests(${TENSORFLOW_LITE_KERNEL_DIR}/internal)
+

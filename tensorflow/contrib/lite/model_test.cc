@@ -319,8 +319,10 @@ int main(int argc, char** argv) {
   //std::unique_ptr<tflite::FlatBufferModel> 
       auto model =
       tflite::FlatBufferModel::BuildFromFile(
-      //"c:/mobilenet/mobilenet_v1_1.0_224_quant.tflite"
-      "c:/mobilenetV2/mobilenet_v2_1.0_224_quant/mobilenet_v2_1.0_224_quant.tflite"
+		  "mobilenetv1/mobilenet_v1_1.0_224_quant.tflite"
+		  //"inceptionv1/inception_v1_224_quant.tflite"
+		  //"inceptionv2/inception_v2_224_quant.tflite"
+		 // "mobilenetv2/mobilenet_v2_1.0_224_quant.tflite"
       );
   std::unique_ptr<tflite::Interpreter> interpreter;
   tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -330,7 +332,7 @@ int main(int argc, char** argv) {
   uint8_t* input = interpreter->typed_input_tensor<uint8_t>(0);
   // load from numpy file an image ... cat here
   unsigned long sz = 224 * 224 * 3;
-  readNPYFileData("c:/mobilenet/cat224ui8tf.npy", input, sz);
+  readNPYFileData("/home/jay/mobilenet_models/mobilenet_v1_1.0_224_quant/cat224ui8tf.npy", input, sz);
   status = interpreter->Invoke();
   uint8_t* output = interpreter->typed_output_tensor<uint8_t>(0);
   //::tflite::LogToStderr();
