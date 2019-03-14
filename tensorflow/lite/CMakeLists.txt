@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.13)
 include(FetchContent)
 include(ExternalProject)
+option(ENABLE_TESTS "Enable tests" ON)
+if (${ENABLE_TESTS})
+    enable_testing()
+endif()
+
 FetchContent_Declare(
   mobilenetv1
   URL http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz
@@ -39,6 +44,12 @@ FetchContent_Declare(
   SOURCE_DIR  inceptionv4
 )
 
+FetchContent_Declare(
+  images
+  GIT_REPOSITORY https://github.com/jnorwood/images.git
+  GIT_TAG        origin/master
+)
+
 
 FetchContent_GetProperties(mobilenetv1)
 if(NOT mobilenetv1_POPULATED)
@@ -65,6 +76,11 @@ endif()
 FetchContent_GetProperties(inceptionv4)
 if(NOT inceptionv4_POPULATED)
   FetchContent_Populate(inceptionv4)
+endif()
+
+FetchContent_GetProperties(images)
+if(NOT images_POPULATED)
+  FetchContent_Populate(images)
 endif()
 
 
@@ -262,6 +278,7 @@ SET (TENSORFLOW_LITE_KERNEL_SOURCES
     ${TENSORFLOW_LITE_KERNEL_DIR}/resize_bilinear.cc
     ${TENSORFLOW_LITE_KERNEL_DIR}/resize_nearest_neighbor.cc
     ${TENSORFLOW_LITE_KERNEL_DIR}/reverse.cc
+    ${TENSORFLOW_LITE_KERNEL_DIR}/reverse_sequence.cc
     ${TENSORFLOW_LITE_KERNEL_DIR}/select.cc
     ${TENSORFLOW_LITE_KERNEL_DIR}/shape.cc
     ${TENSORFLOW_LITE_KERNEL_DIR}/skip_gram.cc
@@ -347,3 +364,27 @@ endfunction()
 
 add_tflite_tests(${TENSORFLOW_LITE_ROOT_DIR})
 
+add_test (NAME mobilenet_v1
+	COMMAND model_test2 ${mobilenetv1_SOURCE_DIR}/mobilenet_v1_1.0_224_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat224ui8tf.npy 224
+	OUTPUT_FILE mod2.txt
+	)
+add_test (NAME mobilenet_v2
+	COMMAND model_test2 ${mobilenetv2_SOURCE_DIR}/mobilenet_v2_1.0_224_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat224ui8tf.npy 224
+	OUTPUT_FILE mod2.txt
+	)
+add_test (NAME inception_v4
+	COMMAND model_test2 ${inceptionv4_SOURCE_DIR}/inception_v4_299_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat_299.tga 299
+	OUTPUT_FILE mod2.txt
+	)
+add_test (NAME inception_v3
+	COMMAND model_test2 ${inceptionv3_SOURCE_DIR}/inception_v3_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat_299.tga 299
+	OUTPUT_FILE mod2.txt
+	)
+add_test (NAME inception_v1
+	COMMAND model_test2 ${inceptionv1_SOURCE_DIR}/inception_v1_224_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat224ui8tf.npy 224
+	OUTPUT_FILE mod2.txt
+	)
+add_test (NAME inception_v2
+	COMMAND model_test2 ${inceptionv2_SOURCE_DIR}/inception_v2_224_quant.tflite ${images_SOURCE_DIR}/tflite_quant/cat224ui8tf.npy 224
+	OUTPUT_FILE mod2.txt
+	)
