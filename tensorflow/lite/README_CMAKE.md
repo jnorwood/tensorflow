@@ -21,7 +21,7 @@ I'm using a tga format file in the tests, and ignoring the header info.
 
 The cat test images are also installed in the dbg build sub-folders as part of the installation.
 
-https://github.com/jnorwood/tensorflow.git 
+git clone https://github.com/jnorwood/tensorflow.git 
 
 cd tensorflow
 
