@@ -1,6 +1,8 @@
 # TensorFlow Lite tflite_cmake branch
 This tflite_cmake branch creates an executable, model_test2 that is a c++ test for dumping per layer data in a useful format for debug.
 
+The printf modifications aer enabled by the DUMP_PER_LAYER_DATA option, specified in the cmake file.
+
 It requires that you specify the path to the tflite model, the path to an image, and the height of the image
 
 It assumes height and with of the image are the same.
