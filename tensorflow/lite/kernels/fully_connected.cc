@@ -533,6 +533,9 @@ TfLiteRegistration* Register_FULLY_CONNECTED_PIE() {
 }
 
 TfLiteRegistration* Register_FULLY_CONNECTED() {
+#ifdef DUMP_PER_LAYER_DATA
+  return Register_FULLY_CONNECTED_REF();
+#endif
   return Register_FULLY_CONNECTED_GENERIC_OPT();
 }
 

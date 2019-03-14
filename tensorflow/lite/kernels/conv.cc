@@ -741,6 +741,9 @@ TfLiteRegistration* Register_CONVOLUTION_CBLAS_OPT() {
 }
 
 TfLiteRegistration* Register_CONV_2D() {
+#ifdef DUMP_PER_LAYER_DATA
+	  return Register_CONVOLUTION_REF();
+#endif
 #ifdef TFLITE_USE_APPLE_ACCELERATE_FOR_CONV
   return Register_CONVOLUTION_CBLAS_OPT();
 #else

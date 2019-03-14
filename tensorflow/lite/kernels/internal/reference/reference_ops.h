@@ -243,11 +243,19 @@ inline void Conv(const ConvParams& params, const RuntimeShape& input_shape,
   const int output_height = output_shape.Dims(1);
   const int output_width = output_shape.Dims(2);
   for (int batch = 0; batch < batches; ++batch) {
+#ifdef DUMP_PER_LAYER_DATA
+	  printf("---------conv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+	       input_height,input_width,output_height,output_width,filter_height,filter_width,
+	       output_multiplier, output_shift);
+#endif
     for (int out_y = 0; out_y < output_height; ++out_y) {
       for (int out_x = 0; out_x < output_width; ++out_x) {
         for (int out_channel = 0; out_channel < output_depth; ++out_channel) {
           const int in_x_origin = (out_x * stride_width) - pad_width;
           const int in_y_origin = (out_y * stride_height) - pad_height;
+#ifdef DUMP_PER_LAYER_DATA
+                printf("out_y=%04d, out_x=%04d, out_ch=%04d,", out_y, out_x, out_channel);
+#endif
           int32 acc = 0;
           for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
             for (int filter_x = 0; filter_x < filter_width; ++filter_x) {
@@ -255,6 +263,7 @@ inline void Conv(const ConvParams& params, const RuntimeShape& input_shape,
                 const int in_x = in_x_origin + dilation_width_factor * filter_x;
                 const int in_y =
                     in_y_origin + dilation_height_factor * filter_y;
+
                 // If the location is outside the bounds of the input image,
                 // use zero as a default value.
                 if ((in_x >= 0) && (in_x < input_width) && (in_y >= 0) &&
@@ -270,14 +279,26 @@ inline void Conv(const ConvParams& params, const RuntimeShape& input_shape,
               }
             }
           }
+#ifdef DUMP_PER_LAYER_DATA
+          printf("acc=%04d,", acc);
+#endif
           if (bias_data) {
             acc += bias_data[out_channel];
           }
+#ifdef DUMP_PER_LAYER_DATA
+          printf("accb=%04d,", acc);
+#endif
           acc = MultiplyByQuantizedMultiplier(acc, output_multiplier,
                                               output_shift);
+#ifdef DUMP_PER_LAYER_DATA
+          printf("accd=%04d,", acc);
+#endif
           acc += output_offset;
           acc = std::max(acc, output_activation_min);
           acc = std::min(acc, output_activation_max);
+#ifdef DUMP_PER_LAYER_DATA
+          printf("accc=%04d\n", acc);
+#endif
           output_data[Offset(output_shape, batch, out_y, out_x, out_channel)] =
               static_cast<uint8>(acc);
         }

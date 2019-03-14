@@ -126,6 +126,11 @@ struct DepthwiseConvBasicKernel {
     const int output_width = output_shape.Dims(2);
     TFLITE_DCHECK_EQ(output_depth, input_depth * depth_multiplier);
     TFLITE_DCHECK_EQ(bias_shape.FlatSize(), output_depth);
+#ifdef DUMP_PER_LAYER_DATA
+    printf("-------dwconv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+            input_height, input_width, output_height, output_width, filter_height,
+            filter_width, output_multiplier,output_shift);
+#endif
 
     for (int b = 0; b < batches; ++b) {
       for (int out_y = 0; out_y < output_height; ++out_y) {
@@ -135,6 +140,9 @@ struct DepthwiseConvBasicKernel {
               const int oc = m + ic * depth_multiplier;
               const int in_x_origin = (out_x * stride_width) - pad_width;
               const int in_y_origin = (out_y * stride_height) - pad_height;
+#ifdef DUMP_PER_LAYER_DATA
+              printf("out_y=%03d,out_x=%03d,ic=%03d,oc=%03d,", out_y, out_x,ic,oc);
+#endif
               int32 acc = 0;
               for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
                 for (int filter_x = 0; filter_x < filter_width; ++filter_x) {
@@ -155,14 +163,26 @@ struct DepthwiseConvBasicKernel {
                   }
                 }
               }
+#ifdef DUMP_PER_LAYER_DATA
+              printf("acc=%d,", acc);
+#endif
               if (bias_data) {
                 acc += bias_data[oc];
               }
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accb=%d,", acc);
+#endif
               acc = DepthwiseConvRound<output_rounding>(acc, output_multiplier,
                                                         output_shift);
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accd=%d,", acc);
+#endif
               acc += output_offset;
               acc = std::max(acc, output_activation_min);
               acc = std::min(acc, output_activation_max);
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accc=%d\n", acc);
+#endif
               output_data[Offset(output_shape, b, out_y, out_x, oc)] =
                   static_cast<uint8>(acc);
             }

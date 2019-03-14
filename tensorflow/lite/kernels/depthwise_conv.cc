@@ -351,6 +351,9 @@ TfLiteRegistration* Register_DEPTHWISE_CONVOLUTION_NEON_OPT() {
 }
 
 TfLiteRegistration* Register_DEPTHWISE_CONV_2D() {
+#ifdef DUMP_PER_LAYER_DATA
+  return Register_DEPTHWISE_CONVOLUTION_REF();
+#endif
 #ifdef USE_NEON
   return Register_DEPTHWISE_CONVOLUTION_NEON_OPT();
 #else

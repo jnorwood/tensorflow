@@ -127,6 +127,21 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
                                    &data->output_activation_min,
                                    &data->output_activation_max);
     }
+#ifdef DUMP_PER_LAYER_DATA
+ //   printf(
+ //       "---------add in1 z=%d, mpy=%d,shft=%d,  in2 z=%d, mpy=%d,shft=%d,  out z=%d, mpy=%d,shft=%d\n",
+//		 op_params.input1_offset, op_params.input1_multiplier, op_params.input1_shift,
+//		 op_params.input2_offset, op_params.input2_multiplier, op_params.input2_shift,
+//		 op_params.output_offset, op_params.output_multiplier, op_params.output_shift);
+     printf(
+         "---in1_scale=%f, in2_scale=%f, out_scale=%f\n" ,
+         input1->params.scale,
+            input2->params.scale, output->params.scale);
+     printf("---twice_max_input_scale=%f, real_input1_multiplier=%f, real_input2_multiplier=%f, real_output_multiplier=%f\n",
+         twice_max_input_scale, real_input1_multiplier, real_input2_multiplier,
+         real_output_multiplier );
+#endif
+
   } else if (output->type == kTfLiteInt16) {
     // 16bit -> 16bit special quantized path, supporting only a rather
     // narrow case of quantization parameters: zero_points must all be 0
@@ -237,6 +252,13 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
     op_params.output_offset = data->output_offset;
     op_params.output_multiplier = data->output_multiplier;
     op_params.output_shift = data->output_shift;
+#ifdef DUMP_PER_LAYER_DATA
+    printf(
+         "---------add in1 z=%d, mpy=%d,shft=%d,  in2 z=%d, mpy=%d,shft=%d,  out z=%d, mpy=%d,shft=%d\n",
+		 op_params.input1_offset, op_params.input1_multiplier, op_params.input1_shift,
+		 op_params.input2_offset, op_params.input2_multiplier, op_params.input2_shift,
+		 op_params.output_offset, op_params.output_multiplier, op_params.output_shift);
+#endif
     SetActivationParams(data->output_activation_min,
                         data->output_activation_max, &op_params);
     bool need_broadcast = optimized_ops::ProcessBroadcastShapes(
