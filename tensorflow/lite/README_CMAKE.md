@@ -40,6 +40,15 @@ cmake ..
 make
 
 make test
+
+It is also possible to create an eclipse debug environment, for example with clang tools) by substituting the following commands after cd dbg, then import that dbg folder into eclipse as an existing project:
+
+export CC=/usr/bin/clang
+
+export CXX=/usr/bin/clang++
+
+cmake -G "Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE -DCMAKE_ECLIPSE_MAKE_ARGUMENTS=-j8 ..
+
  
 
 
