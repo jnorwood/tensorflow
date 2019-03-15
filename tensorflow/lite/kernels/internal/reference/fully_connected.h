@@ -91,21 +91,40 @@ inline void FullyConnected(
   const int output_depth = MatchingDim(filter_shape, filter_dim_count - 2,
                                        output_shape, output_dim_count - 1);
   const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
+#ifdef DUMP_PER_LAYER_DATA
+    printf("-------fully_connected accum_depth=%d, output_depth=%d,mpy=%d,shft=%d\n",
+    		accum_depth, output_depth, output_multiplier,output_shift);
+#endif
   for (int b = 0; b < batches; ++b) {
     for (int out_c = 0; out_c < output_depth; ++out_c) {
       int32 acc = 0;
+#ifdef DUMP_PER_LAYER_DATA
+              printf("oc=%04d,", out_c);
+#endif
       for (int d = 0; d < accum_depth; ++d) {
         int32 input_val = input_data[b * accum_depth + d];
         int32 filter_val = filter_data[out_c * accum_depth + d];
         acc += (filter_val + filter_offset) * (input_val + input_offset);
       }
+#ifdef DUMP_PER_LAYER_DATA
+              printf("acc=%d,", acc);
+#endif
       if (bias_data) {
         acc += bias_data[out_c];
       }
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accb=%d,", acc);
+#endif
       acc = MultiplyByQuantizedMultiplier(acc, output_multiplier, output_shift);
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accd=%d,", acc);
+#endif
       acc += output_offset;
       acc = std::max(acc, output_activation_min);
       acc = std::min(acc, output_activation_max);
+#ifdef DUMP_PER_LAYER_DATA
+              printf("accc=%d\n", acc);
+#endif
       output_data[out_c + output_depth * b] = static_cast<uint8>(acc);
     }
   }

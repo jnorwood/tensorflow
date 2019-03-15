@@ -5,6 +5,7 @@ option(ENABLE_TESTS "Enable tests" ON)
 if (${ENABLE_TESTS})
     enable_testing()
 endif()
+set(CMAKE_BUILD_TYPE Debug)
 
 FetchContent_Declare(
   mobilenetv1
