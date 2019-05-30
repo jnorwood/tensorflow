@@ -244,9 +244,9 @@ inline void Conv(const ConvParams& params, const RuntimeShape& input_shape,
   const int output_width = output_shape.Dims(2);
   for (int batch = 0; batch < batches; ++batch) {
 #ifdef DUMP_PER_LAYER_DATA
-	  printf("---------conv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+	  printf("---------conv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d,amin=%d, amax=%d\n",
 	       input_height,input_width,output_height,output_width,filter_height,filter_width,
-	       output_multiplier, output_shift);
+	       output_multiplier, output_shift, output_activation_min, output_activation_max);
 #endif
     for (int out_y = 0; out_y < output_height; ++out_y) {
       for (int out_x = 0; out_x < output_width; ++out_x) {

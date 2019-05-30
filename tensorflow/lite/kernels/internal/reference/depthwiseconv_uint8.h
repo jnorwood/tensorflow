@@ -127,9 +127,9 @@ struct DepthwiseConvBasicKernel {
     TFLITE_DCHECK_EQ(output_depth, input_depth * depth_multiplier);
     TFLITE_DCHECK_EQ(bias_shape.FlatSize(), output_depth);
 #ifdef DUMP_PER_LAYER_DATA
-    printf("-------dwconv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d\n",
+    printf("-------dwconv in_h=%d, in_w=%d,out_h=%d,out_w=%d,f_h=%d,f_w=%d,mpy=%d,shft=%d,amin=%d, amax=%d\n",
             input_height, input_width, output_height, output_width, filter_height,
-            filter_width, output_multiplier,output_shift);
+            filter_width, output_multiplier,output_shift, output_activation_min, output_activation_max);
 #endif
 
     for (int b = 0; b < batches; ++b) {
