@@ -24,7 +24,7 @@ limitations under the License.
 #include "tensorflow/core/framework/tensor_types.h"
 #include "tensorflow/core/framework/types.h"
 
-#if GOOGLE_CUDA
+#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
 
 #include "tensorflow/core/kernels/concat_lib_gpu.h"
 #include "tensorflow/core/kernels/gpu_device_array.h"
@@ -38,14 +38,14 @@ void ConcatGPUCall(
     const std::vector<std::unique_ptr<typename TTypes<T, 2>::ConstMatrix>>&
         inputs_flat,
     typename TTypes<T, 2>::Tensor* output_flat) {
-  CudaDeviceArrayOnHost<const T*> input_ptrs(c, inputs_flat.size());
+  GpuDeviceArrayOnHost<const T*> input_ptrs(c, inputs_flat.size());
   OP_REQUIRES_OK(c, input_ptrs.Init());
   for (int i = 0; i < inputs_flat.size(); ++i) {
     input_ptrs.Set(i, inputs_flat[i]->data());
   }
   OP_REQUIRES_OK(c, input_ptrs.Finalize());
 
-  CudaDeviceArrayOnHost<IntType> output_scan(c, inputs_flat.size() + 1);
+  GpuDeviceArrayOnHost<IntType> output_scan(c, inputs_flat.size() + 1);
   OP_REQUIRES_OK(c, output_scan.Init());
   IntType scan = 0;
   output_scan.Set(0, scan);
@@ -112,4 +112,4 @@ TF_CALL_uint8(REGISTER);
 
 }  // namespace tensorflow
 
-#endif  // GOOGLE_CUDA
+#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM

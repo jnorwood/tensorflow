@@ -1,8 +1,6 @@
 # Description:
 #   ROCm-platform specific StreamExecutor support code.
 
-licenses(["notice"])  # Apache 2.0
-
 load("//tensorflow:tensorflow.bzl", "tf_cc_test")
 load(
     "//tensorflow/stream_executor:build_defs.bzl",
@@ -12,13 +10,14 @@ load("//tensorflow:tensorflow.bzl", "tf_copts")
 load("@local_config_rocm//rocm:build_defs.bzl", "if_rocm_is_configured")
 load("//tensorflow/core:platform/default/build_config_root.bzl", "if_static")
 
+package(
+    default_visibility = [":friends"],
+    licenses = ["notice"],  # Apache 2.0
+)
+
 package_group(
     name = "friends",
     packages = stream_executor_friends(),
-)
-
-package(
-    default_visibility = [":friends"],
 )
 
 # Filegroup used to collect source files for the dependency check.
@@ -138,6 +137,7 @@ cc_library(
         ":rocm_driver",
         ":rocm_gpu_executor",
         ":rocm_platform_id",
+        "@com_google_absl//absl/memory",
         "//tensorflow/stream_executor",  # buildcleaner: keep
         "//tensorflow/stream_executor:executor_cache",
         "//tensorflow/stream_executor:multi_platform_manager",
@@ -232,7 +232,6 @@ cc_library(
         "//tensorflow/core:lib_internal",
         "//tensorflow/stream_executor:dnn",
         "//tensorflow/stream_executor:event",
-        "//tensorflow/stream_executor:logging_proto_cc",
         "//tensorflow/stream_executor:plugin_registry",
         "//tensorflow/stream_executor:scratch_allocator",
         "//tensorflow/stream_executor:stream_executor_pimpl_header",

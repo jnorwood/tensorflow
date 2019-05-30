@@ -31,6 +31,7 @@ from tensorflow.python.eager import backprop
 from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import test_util
 from tensorflow.python.keras import keras_parameterized
 from tensorflow.python.keras import testing_utils
@@ -137,47 +138,53 @@ class GRUV2Test(keras_parameterized.TestCase):
       l2 = layer_class.from_config(l1.get_config())
       assert l1.get_config() == l2.get_config()
 
+  # Due to b/120160788
+  @test_util.run_v2_only
   def test_unified_gru_feature_parity_with_canonical_gru(self):
-    with context.eager_mode():
-      # Run this test under eager only due to b/120160788 for model.set_weights.
-      input_shape = 10
-      rnn_state_size = 8
-      timestep = 4
-      batch = 20
+    input_shape = 10
+    rnn_state_size = 8
+    timestep = 4
+    batch = 20
 
-      (x_train, y_train), _ = testing_utils.get_test_data(
-          train_samples=batch,
-          test_samples=0,
-          input_shape=(timestep, input_shape),
-          num_classes=rnn_state_size)
-      y_train = keras.utils.to_categorical(y_train, rnn_state_size)
+    (x_train, y_train), _ = testing_utils.get_test_data(
+        train_samples=batch,
+        test_samples=0,
+        input_shape=(timestep, input_shape),
+        num_classes=rnn_state_size,
+        random_seed=random_seed.DEFAULT_GRAPH_SEED)
+    y_train = keras.utils.to_categorical(y_train, rnn_state_size)
+    # For the last batch item of the test data, we filter out the last
+    # timestep to simulate the variable length sequence and masking test.
+    x_train[-2:, -1, :] = 0.0
+    y_train[-2:] = 0
 
-      inputs = keras.layers.Input(
-          shape=[timestep, input_shape], dtype=dtypes.float32)
-      gru_layer = rnn_v1.GRU(rnn_state_size,
-                             recurrent_activation='sigmoid',
-                             reset_after=True)
-      output = gru_layer(inputs)
-      gru_model = keras.models.Model(inputs, output)
-      weights = gru_model.get_weights()
-      y_1 = gru_model.predict(x_train)
-      gru_model.compile('rmsprop', 'mse')
-      gru_model.fit(x_train, y_train)
-      y_2 = gru_model.predict(x_train)
+    inputs = keras.layers.Input(
+        shape=[timestep, input_shape], dtype=dtypes.float32)
+    masked_input = keras.layers.Masking()(inputs)
+    gru_layer = rnn_v1.GRU(rnn_state_size,
+                           recurrent_activation='sigmoid',
+                           reset_after=True)
+    output = gru_layer(masked_input)
+    gru_model = keras.models.Model(inputs, output)
+    weights = gru_model.get_weights()
+    y_1 = gru_model.predict(x_train)
+    gru_model.compile('rmsprop', 'mse')
+    gru_model.fit(x_train, y_train)
+    y_2 = gru_model.predict(x_train)
 
-      with test_util.device(use_gpu=True):
-        cudnn_layer = rnn.GRU(rnn_state_size,
-                              recurrent_activation='sigmoid',
-                              reset_after=True)
-        cudnn_model = keras.models.Model(inputs, cudnn_layer(inputs))
-      cudnn_model.set_weights(weights)
-      y_3 = cudnn_model.predict(x_train)
-      cudnn_model.compile('rmsprop', 'mse')
-      cudnn_model.fit(x_train, y_train)
-      y_4 = cudnn_model.predict(x_train)
+    with test_util.device(use_gpu=True):
+      cudnn_layer = rnn.GRU(rnn_state_size,
+                            recurrent_activation='sigmoid',
+                            reset_after=True)
+      cudnn_model = keras.models.Model(inputs, cudnn_layer(masked_input))
+    cudnn_model.set_weights(weights)
+    y_3 = cudnn_model.predict(x_train)
+    cudnn_model.compile('rmsprop', 'mse')
+    cudnn_model.fit(x_train, y_train)
+    y_4 = cudnn_model.predict(x_train)
 
-      self.assertAllClose(y_1, y_3, rtol=2e-5, atol=2e-5)
-      self.assertAllClose(y_2, y_4, rtol=2e-5, atol=2e-5)
+    self.assertAllClose(y_1, y_3, rtol=2e-5, atol=2e-5)
+    self.assertAllClose(y_2, y_4, rtol=2e-5, atol=2e-5)
 
   @parameterized.named_parameters(
       # test_name, use_bias, bias_initializer, activation
@@ -417,6 +424,8 @@ class GRUV2Test(keras_parameterized.TestCase):
     else:
       self.assertEqual(len(layer.get_losses_for(x)), 1)
 
+  # Run in V2 only due to b/120160788.
+  @test_util.run_v2_only
   def test_statefulness_GRU(self):
     num_samples = 2
     timesteps = 3
@@ -477,7 +486,16 @@ class GRUV2Test(keras_parameterized.TestCase):
     right_padded_input[1, -2:] = 0
     out7 = model.predict(right_padded_input)
 
-    np.testing.assert_allclose(out7, out6, atol=1e-5)
+    layer.reset_states()
+
+    mix_padded_input = np.ones((num_samples, timesteps))
+    mix_padded_input[0, 1] = 0
+    mix_padded_input[1, 0] = 0
+    mix_padded_input[1, 2] = 0
+    out8 = model.predict(mix_padded_input)
+
+    self.assertAllClose(out7, out6, atol=1e-5)
+    self.assertAllClose(out8, out7, atol=1e-5)
 
   def test_stateful_GRU_training(self):
     # See b/123587692 for more context.
@@ -569,9 +587,9 @@ class GRULayerGraphOnlyTest(test.TestCase):
             predict: y_train
         })
         if test.is_gpu_available():
-          self.assertEqual(runtime_value, b'cudnn')
+          self.assertEqual(runtime_value, rnn._RUNTIME_GPU)
         else:
-          self.assertEqual(runtime_value, b'cpu')
+          self.assertEqual(runtime_value, rnn._RUNTIME_CPU)
         # Make sure the loss is updated for every epoch
         # (layer weights properly updated).
         self.assertNotEqual(existing_loss, loss_value)
@@ -606,8 +624,7 @@ class GRULayerGraphOnlyTest(test.TestCase):
           dtypes.float32, shape=(None, output_shape), name='predict')
 
       zeros = array_ops.zeros([batch, output_shape])
-      dummy_runtime = constant_op.constant(
-          'unknown', dtype=dtypes.string, name='runtime')
+      dummy_runtime = rnn._runtime(rnn._RUNTIME_UNKNOWN)
       a = constant_op.constant(0)
       b = constant_op.constant(1)
       # Will always run the GRU layer.
@@ -628,9 +645,9 @@ class GRULayerGraphOnlyTest(test.TestCase):
             predict: y_train
         })
         if test.is_gpu_available():
-          self.assertEqual(runtime_value, b'cudnn')
+          self.assertEqual(runtime_value, rnn._RUNTIME_GPU)
         else:
-          self.assertEqual(runtime_value, b'cpu')
+          self.assertEqual(runtime_value, rnn._RUNTIME_CPU)
         # Make sure the loss is updated for every epoch
         # (layer weights properly updated).
         self.assertNotEqual(existing_loss, loss_value)
