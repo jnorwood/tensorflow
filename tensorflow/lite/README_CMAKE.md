@@ -49,6 +49,13 @@ export CXX=/usr/bin/clang++
 
 cmake -G "Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE -DCMAKE_ECLIPSE_MAKE_ARGUMENTS=-j8 ..
 
+Below is an example of one of the tests, specifying the quantized model, an RGB uint8 format input file, the height of the input file in pixels and a redirect of output
+
+./model_test2 "/home/jay/tensorflow/tensorflow/lite/dbg/mobilenetv1/mobilenet_v1_1.0_224_quant.tflite" "/home/jay/tensorflow/tensorflow/lite/dbg/_deps/images-src/tflite_quant/cat224ui8tf.npy" "224" >mod2.log
+
+
+
+
  
 
 
